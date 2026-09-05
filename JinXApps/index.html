@@ -1,1 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Your Apps</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f0f2f5; display: flex; justify-content: center; padding: 0; }
+    .container { width: 100%; max-width: 480px; background: #fff; min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+    
+    /* Header */
+    .header { background-color: #0d52bf; color: white; text-align: center; padding: 16px; font-size: 1.25rem; font-weight: bold; }
+    
+    /* App Grid Section */
+    .content { flex: 1; padding: 20px 15px; }
+    .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px 10px; text-align: center; }
+    .app-item { text-decoration: none; color: #333; display: flex; flex-direction: column; align-items: center; }
+    .app-icon { width: 68px; height: 68px; border-radius: 18px; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.12); margin-bottom: 6px; transition: transform 0.1s; }
+    .app-icon:active { transform: scale(0.95); }
+    .app-name { font-size: 0.8rem; font-weight: 600; line-height: 1.2; word-break: break-word; max-width: 75px; text-align: center; color: #222; }
+    
+    /* Footer */
+    .footer { text-align: center; padding: 20px; font-size: 0.85rem; color: #666; border-top: 1px solid #eee; margin-top: auto; }
+    
+    /* Hidden Auth Overlay */
+    .overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.98); z-index: 100; padding: 30px 20px; flex-direction: column; align-items: center; justify-content: center; }
+    .auth-box { width: 100%; max-width: 320px; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: 1px solid #e1e4e8; }
+    .auth-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 20px; text-align: center; color: #0d52bf; }
+    .field-group { margin-bottom: 15px; }
+    .field-group label { display: block; font-size: 0.8rem; color: #555; margin-bottom: 5px; font-weight: 600; }
+    .field-group input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; outline: none; }
+    .btn-submit { width: 100%; padding: 12px; background: #0d52bf; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .btn-submit:active { background: #0a3d8f; }
+
+    /* Hidden Admin Manager Panel */
+    .admin-panel { display: none; padding: 20px; }
+    .admin-panel h2 { font-size: 1.2rem; color: #0d52bf; margin-bottom: 15px; }
+    .upload-form { display: flex; flex-direction: column; gap: 12px; }
+    .upload-form input, .upload-form textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">Download Your Apps</div>
+
+    <!-- MAIN APP STORE GRID -->
+    <div class="content" id="storeView">
+      <div class="app-grid" id="appGrid">
+        <!-- Sample Apps populated via JS or Static -->
+      </div>
+    </div>
+
+    <!-- HIDDEN AUTH PORTAL PAGE (?upload) -->
+    <div class="overlay" id="portalView">
+      <div class="auth-box">
+        <div class="auth-title">Portal Verification</div>
+        <form id="authForm">
+          <div class="field-group">
+            <label>ID</label>
+            <input type="text" id="i1" required autocomplete="off">
+          </div>
+          <div class="field-group">
+            <label>ACCESS KEY</label>
+            <input type="password" id="i2" required>
+          </div>
+          <button type="submit" class="btn-submit">Verify & Continue</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- UPLOAD MANAGER PAGE (After Auth Success) -->
+    <div class="admin-panel" id="adminView">
+      <h2>App Data Manager</h2>
+      <form class="upload-form" id="appUploadForm">
+        <input type="text" id="appId" placeholder="App ID (e.g. pubg)" required>
+        <input type="text" id="appName" placeholder="App Name" required>
+        <input type="text" id="appVer" placeholder="Version (e.g. 1.7.0)" required>
+        <input type="text" id="appSize" placeholder="Size (e.g. 800 MB)" required>
+        <input type="url" id="appIcon" placeholder="Icon URL" required>
+        <input type="url" id="appBanner" placeholder="Banner Preview URL" required>
+        <input type="url" id="appDownload" placeholder="Direct APK Download URL" required>
+        <textarea id="appDesc" rows="4" placeholder="Full Description..." required></textarea>
+        <button type="submit" class="btn-submit">Add / Update App</button>
+      </form>
+    </div>
+
+    <div class="footer">
+      Powered by Khant Zaw Minn Oo
+    </div>
+  </div>
+
+  <script>
+    // Base64 Encoded Verification Strings
+    const _0x1a = "dXBsb2FkZXI="; // uploader
+    const _0x1b = "RGFicmlhQXBwc0A2OQ=="; // DabriaApps@69
+
+    // Sample App Database (Can be loaded from localStorage)
+    const defaultApps = [
+      { id: "facebook", name: "Facebook", icon: "https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" },
+      { id: "instagram", name: "Instagram", icon: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" },
+      { id: "whatsapp", name: "WhatsApp", icon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" },
+      { id: "tiktok", name: "TikTok", icon: "https://sf16-website-login.net2sys.com/obj/tiktok-web-sg/tiktok_icon.png" },
+      { id: "youtube", name: "YouTube", icon: "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg" },
+      { id: "messenger", name: "Messenger", icon: "https://upload.wikimedia.org/wikipedia/commons/be/be/Facebook_Messenger_logo_2020.svg" },
+      { id: "pubg", name: "PUBG Mobile", icon: "https://play-lh.googleusercontent.com/JRd051-P81CCh3z_v352A90AXA8I-9mS-C8T84T-_2j4iLqf5y" }
+    ];
+
+    function loadAppGrid() {
+      const grid = document.getElementById("appGrid");
+      grid.innerHTML = "";
+      const stored = JSON.parse(localStorage.getItem("dabria_apps_db") || "[]");
+      const apps = stored.length ? stored : defaultApps;
+
+      apps.forEach(app => {
+        const item = document.createElement("a");
+        item.className = "app-item";
+        item.href = `details.html?${app.id}`;
+        item.innerHTML = `
+          <img src="${app.icon}" class="app-icon" alt="${app.name}" onerror="this.src='https://via.placeholder.com/68'">
+          <span class="app-name">${app.name}</span>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    // Check URL parameters for ?upload
+    window.addEventListener("DOMContentLoaded", () => {
+      loadAppGrid();
+
+      const urlParams = window.location.search;
+      if (urlParams.includes("upload")) {
+        document.getElementById("storeView").style.display = "none";
+        document.getElementById("portalView").style.display = "flex";
+      }
+    });
+
+    // Verification Handling
+    document.getElementById("authForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const val1 = btoa(document.getElementById("i1").value.trim());
+      const val2 = btoa(document.getElementById("i2").value.trim());
+
+      if (val1 === _0x1a && val2 === _0x1b) {
+        document.getElementById("portalView").style.display = "none";
+        document.getElementById("adminView").style.display = "block";
+      } else {
+        alert("Access Denied!");
+      }
+    });
+
+    // Handle Adding/Saving Apps to Local Database
+    document.getElementById("appUploadForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const newApp = {
+        id: document.getElementById("appId").value.trim().toLowerCase(),
+        name: document.getElementById("appName").value.trim(),
+        version: document.getElementById("appVer").value.trim(),
+        size: document.getElementById("appSize").value.trim(),
+        icon: document.getElementById("appIcon").value.trim(),
+        banner: document.getElementById("appBanner").value.trim(),
+        download: document.getElementById("appDownload").value.trim(),
+        desc: document.getElementById("appDesc").value.trim()
+      };
+
+      let currentDB = JSON.parse(localStorage.getItem("dabria_apps_db") || "[]");
+      currentDB = currentDB.filter(a => a.id !== newApp.id);
+      currentDB.push(newApp);
+      localStorage.setItem("dabria_apps_db", JSON.stringify(currentDB));
+
+      alert("App data saved successfully!");
+      location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
 
