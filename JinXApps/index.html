@@ -57,11 +57,6 @@
       <h2 style="font-size: 1.1rem; color: #0d52bf; margin-bottom: 15px;">App Assets Uploader</h2>
       <form id="appUploadForm">
         <div class="field-group">
-          <label>GitHub Username/Repository</label>
-          <input type="text" id="ghRepo" placeholder="username/repository" required>
-        </div>
-        <hr style="margin: 15px 0;">
-        <div class="field-group">
           <label>Package ID (e.g. com.jinx.app)</label>
           <input type="text" id="appId" placeholder="com.example.myapp" required>
         </div>
@@ -95,31 +90,45 @@
     const _0x1a = "dXBsb2FkZXI=";
     const _0x1b = "RGFicmlhQXBwc0A2OQ==";
     const _0xgh = "R2hwX0JLc1VPZ1hMMnVmZHBUbVFpUFVDVEI3RHZtMmVONFpOOFFTMw==";
+    
+    const TARGET_REPO = "KhantZawMinnOo/khantzawminnoo.github.io";
+    const BASE_PATH = "JinXApps/Assets";
 
     function getDecryptedToken() {
       return atob(_0xgh);
     }
 
-    const defaultApps = [
-      { id: "pubg", name: "PUBG Mobile", icon: "Assets/pubg/preview.png" }
-    ];
-
-    function loadAppGrid() {
+    async function loadAppGrid() {
       const grid = document.getElementById("appGrid");
       grid.innerHTML = "";
-      const stored = JSON.parse(localStorage.getItem("dabria_apps_list") || "[]");
-      const apps = stored.length ? stored : defaultApps;
 
-      apps.forEach(app => {
-        const item = document.createElement("a");
-        item.className = "app-item";
-        item.href = `details.html?${app.id}`;
-        item.innerHTML = `
-          <img src="${app.icon}" class="app-icon" alt="${app.name}" onerror="this.src='https://via.placeholder.com/68'">
-          <span class="app-name">${app.name}</span>
-        `;
-        grid.appendChild(item);
-      });
+      try {
+        const res = await fetch(`https://api.github.com/repos/${TARGET_REPO}/contents/${BASE_PATH}`);
+        if (!res.ok) throw new Error("No assets folder found");
+        
+        const items = await res.json();
+        const folders = items.filter(item => item.type === "dir");
+
+        for (const folder of folders) {
+          const appId = folder.name;
+          try {
+            const dataRes = await fetch(`${BASE_PATH}/${appId}/data.json`);
+            if (dataRes.ok) {
+              const data = await dataRes.json();
+              const item = document.createElement("a");
+              item.className = "app-item";
+              item.href = `details.html?${appId}`;
+              item.innerHTML = `
+                <img src="${data.previewPath}" class="app-icon" alt="${data.name}" onerror="this.src='https://via.placeholder.com/68'">
+                <span class="app-name">${data.name}</span>
+              `;
+              grid.appendChild(item);
+            }
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     window.addEventListener("DOMContentLoaded", () => {
@@ -148,8 +157,8 @@
       reader.onerror = error => reject(error);
     });
 
-    async function uploadToGitHubRepo(repo, path, contentBase64, message) {
-      const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+    async function uploadToGitHubRepo(path, contentBase64, message) {
+      const url = `https://api.github.com/repos/${TARGET_REPO}/contents/${path}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: {
@@ -169,7 +178,6 @@
       const status = document.getElementById("statusMsg");
       const btn = document.getElementById("btnUpload");
       
-      const repo = document.getElementById("ghRepo").value.trim();
       const appId = document.getElementById("appId").value.trim().toLowerCase();
       const appName = document.getElementById("appName").value.trim();
       const appDesc = document.getElementById("appDesc").value.trim();
@@ -185,9 +193,9 @@
         const previewBase64 = await fileToBase64(previewFile);
         const previewExt = previewFile.name.split('.').pop();
 
-        const apkPath = `Assets/${appId}/app.apk`;
-        const previewPath = `Assets/${appId}/preview.${previewExt}`;
-        const jsonPath = `Assets/${appId}/data.json`;
+        const apkPath = `${BASE_PATH}/${appId}/app.apk`;
+        const previewPath = `${BASE_PATH}/${appId}/preview.${previewExt}`;
+        const jsonPath = `${BASE_PATH}/${appId}/data.json`;
 
         const jsonContent = JSON.stringify({
           id: appId,
@@ -201,21 +209,16 @@
         const jsonBase64 = btoa(unescape(encodeURIComponent(jsonContent)));
 
         status.innerText = "Uploading APK to Assets...";
-        await uploadToGitHubRepo(repo, apkPath, apkBase64, `Add APK for ${appId}`);
+        await uploadToGitHubRepo(apkPath, apkBase64, `Add APK for ${appId}`);
 
         status.innerText = "Uploading Preview Image...";
-        await uploadToGitHubRepo(repo, previewPath, previewBase64, `Add Preview for ${appId}`);
+        await uploadToGitHubRepo(previewPath, previewBase64, `Add Preview for ${appId}`);
 
         status.innerText = "Generating data.json...";
-        await uploadToGitHubRepo(repo, jsonPath, jsonBase64, `Add JSON for ${appId}`);
-
-        let currentApps = JSON.parse(localStorage.getItem("dabria_apps_list") || "[]");
-        currentApps = currentApps.filter(a => a.id !== appId);
-        currentApps.push({ id: appId, name: appName, icon: previewPath });
-        localStorage.setItem("dabria_apps_list", JSON.stringify(currentApps));
+        await uploadToGitHubRepo(jsonPath, jsonBase64, `Add JSON for ${appId}`);
 
         status.innerText = "Upload Completed Successfully!";
-        alert(`Assets created at Assets/${appId}/ successfully!`);
+        alert(`Assets created at ${BASE_PATH}/${appId}/ successfully!`);
         location.href = "index.html";
 
       } catch (err) {
